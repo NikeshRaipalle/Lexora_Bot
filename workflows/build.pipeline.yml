@@ -1,0 +1,77 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m spacy download en
+      - name: Install package
+        run: |
+          pip install .
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Test with pytest
+        env: # Provide env variables stored in repo secrets
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ENGINE: ada
+        run: |
+          coverage run -m pytest
+          coverage report
+          coverage html
+      - name: Get branch
+        id: branch-info
+        run: |
+          # Get branch name
+          # Short name for current branch. For PRs, use target branch (base ref)
+          GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          echo running on branch $GIT_BRANCH
+          echo "::set-output name=GIT_BRANCH::$GIT_BRANCH"
+      - name: Create coverage badge
+        if: steps.branch-info.outputs.GIT_BRANCH == 'main'
+        run: |
+          pip install coverage-badge
+          coverage-badge -fo tests/coverage-badge.svg
+      - name: Commit files
+        id: commit
+        if: steps.branch-info.outputs.GIT_BRANCH == 'main'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          if git diff --exit-code; then
+            echo "::set-output name=push::false"
+          else
+            git add tests/coverage-badge.svg
+            git commit -m "update CI status" -a
+            echo "::set-output name=push::true"
+          fi
+      - name: Push changes
+        if: steps.branch-info.outputs.GIT_BRANCH == 'main' && steps.commit.outputs.push == 'true'
+        run: |
+          # Get branch name
+          # Short name for current branch. For PRs, use target branch (base ref)
+          # GIT_BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # git push origin HEAD:$GIT_BRANCH
+          git push
