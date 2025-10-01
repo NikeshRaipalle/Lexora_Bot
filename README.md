@@ -1,4 +1,4 @@
-# Nova AI
+# Lexora_Bot
 
 ![CI](https://github.com/ConvAF/NovaAI/actions/workflows/build.pipeline.yml/badge.svg)
 ![Coverage badge](tests/coverage-badge.svg)
@@ -15,7 +15,7 @@ http://nova-ai.net/ (Udpate: no longer active)
 
 ## Overview
 
-Nova is an application that uses conversational AI for language learning to help users gain fluency in their target language (work in progress).
+Lexora_Bot is an application that uses conversational AI for language learning to help users gain fluency in their target language (work in progress).
 
 Users can chat with Nova, practice specific scenarios, and track their learning progress.
 
